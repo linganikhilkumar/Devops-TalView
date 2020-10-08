@@ -22,7 +22,7 @@ minikube-stop:
 install-helm: 
 	@choco install kubernetes-helm
 
-setup-application: minikube-up install-helm uninstall-application
+setup-application: minikube-up install-helm
 	@helm install mailtrain-application mailtrain-application --values mailtrain-application/values.yaml
 
 uninstall-application:
