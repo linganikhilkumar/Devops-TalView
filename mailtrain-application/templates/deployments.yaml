@@ -1,0 +1,179 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: mailtrain
+  name: mailtrain
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailtrain
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: mailtrain
+    spec:
+      volumes:
+      - name: mailtrain-mailtrain-pvc
+        persistentVolumeClaim:
+          claimName: mailtrain-mailtrain-pvc
+      containers:
+      - image: mailtrain/mailtrain
+        name: mailtrain
+        resources: {}
+        ports:
+        - name: http-3000
+          containerPort: 3000
+          protocol: TCP
+        - name: http-3003
+          containerPort: 3003
+          protocol: TCP
+        - name: http-3004
+          containerPort: 3004
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 300
+        readinessProbe:
+          httpGet:
+              path: /
+              port: 3000
+          initialDelaySeconds: 5
+        volumeMounts:
+        - name: mailtrain-mailtrain-pvc
+          mountPath: /data/db
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: mongo
+  name: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - image: mongo
+        name: mongo
+        resources: {}
+        ports:
+        - containerPort: 27017
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /data/db
+          name: mailtrain-mongo-pvc
+      volumes:
+      - name: mailtrain-mongo-pvc
+        persistentVolumeClaim:
+          claimName: mailtrain-mongo-pvc
+status: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: mysql
+  name: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: mysql
+    spec:
+      volumes:
+      - name: mailtrain-mysql-pvc
+        persistentVolumeClaim:
+          claimName: mailtrain-mysql-pvc
+      containers:
+      - image: mysql:5.7
+        name: mysql
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql
+                key: MYSQL_ROOT_PASSWORD
+          - name: MYSQL_DATABASE
+            value: mailtrain
+          - name: MYSQL_USER
+            valueFrom:
+              secretKeyRef:
+                name: mysql
+                key: MYSQL_USER
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql
+                key: MYSQL_PASSWORD
+        ports:
+          - name: mysql
+            containerPort: 3306
+            protocol: TCP
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: mailtrain-mysql-pvc
+        resources: {}
+status: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: redis
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: redis
+    spec:
+      volumes:
+      - name: mailtrain-redis-pvc
+        persistentVolumeClaim:
+          claimName: mailtrain-redis-pvc
+      containers:
+      - image: redis:3.2
+        name: redis
+        volumeMounts:
+        - name: mailtrain-redis-pvc
+          mountPath: /var/lib/redis
+        ports:
+          - name: redis
+            containerPort: 6379
+            protocol: TCP
+status: {}
